@@ -10,12 +10,13 @@ import { TaskForm } from "../tasks/components/TaskForm";
 import { TaskRow } from "../tasks/components/TaskRow";
 import { useTasks } from "../tasks/taskContext";
 import { completionPercent } from "../tasks/demoData";
+import { getPlanProgress } from "../plans/goalProgress";
 import { usePlans } from "../plans/planContext";
 import { categoryColors, kindLabels, periodLabels } from "../plans/planRules";
 
 export default function DashboardPage() {
   const { tasks } = useTasks();
-  const { plans } = usePlans();
+  const { plans, milestones } = usePlans();
   const [showForm, setShowForm] = useState(false);
   const activePlans = plans.filter((plan)=>plan.status === "active");
   const activeIds = new Set(activePlans.map((plan)=>plan.id));
@@ -54,13 +55,13 @@ export default function DashboardPage() {
         <div className="mb-4 flex items-center justify-between"><h2 id="plans-heading" className="text-xl font-bold">Rencana aktif</h2><Link to="/app/plans" className="text-sm font-semibold text-brand-600 hover:underline dark:text-brand-100">Lihat semua →</Link></div>
         {activePlans.length ? <div className="grid gap-4 md:grid-cols-3">
           {activePlans.slice(0,6).map((plan)=>{
-            const planTasks=activeTasks.filter((t)=>t.projectId === plan.id);
             const PlanIcon = plan.kind === "goal" ? Target : FolderKanban;
+            const progress = getPlanProgress(plan, tasks, milestones);
             return <Link key={plan.id} to={`/app/plans/${plan.id}`} className="group block rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600">
               <Card className="h-full p-5 transition-transform group-hover:-translate-y-0.5 group-hover:shadow-md">
                 <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-xl text-white ${categoryColors[plan.category]}`}><PlanIcon size={19}/></div>
                 <h3 className="font-bold">{plan.name}</h3><p className="mt-1 min-h-10 text-sm text-slate-500 dark:text-slate-400">{plan.description || "Belum ada deskripsi."}</p><p className="mt-2 text-xs text-slate-500">{kindLabels[plan.kind]} · {periodLabels[plan.period]}</p>
-                <div className="mt-5 flex justify-between text-xs"><span className="text-slate-500">{planTasks.length} tugas</span><span className="font-bold">{completionPercent(planTasks)}%</span></div><div className="mt-2"><ProgressBar value={completionPercent(planTasks)} label={`Progres ${plan.name}`}/></div>
+                <div className="mt-5 flex justify-between text-xs"><span className="text-slate-500">{progress.caption}</span><span className="font-bold">{progress.percent}%</span></div><div className="mt-2"><ProgressBar value={progress.percent} label={`Progres ${plan.name}`}/></div>
               </Card>
             </Link>;
           })}

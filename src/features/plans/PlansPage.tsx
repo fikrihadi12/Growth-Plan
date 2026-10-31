@@ -5,7 +5,7 @@ import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { ProgressBar } from "../../components/ui/ProgressBar";
 import { EmptyState } from "../../components/common/EmptyState";
-import { completionPercent } from "../tasks/demoData";
+import { getPlanProgress } from "./goalProgress";
 import { useTasks } from "../tasks/taskContext";
 import { PlanForm } from "./components/PlanForm";
 import { usePlans } from "./planContext";
@@ -17,7 +17,7 @@ type KindFilter = "all" | PlanKind;
 const controlClass = "rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white";
 
 export default function PlansPage() {
-  const { plans, deletePlan, setPlanArchived } = usePlans();
+  const { plans, milestones, deletePlan, setPlanArchived } = usePlans();
   const { tasks } = useTasks();
   const [showForm, setShowForm] = useState(false);
   const [query, setQuery] = useState("");
@@ -32,7 +32,8 @@ export default function PlansPage() {
 
   function removePlan(id: string, name: string) {
     const count = tasks.filter((task) => task.projectId === id).length;
-    if (window.confirm(`Hapus rencana "${name}" secara permanen? ${count} tugas yang terhubung juga akan DIHAPUS. Tindakan ini tidak dapat dibatalkan.`)) {
+    const countMilestones = milestones.filter((m) => m.planId === id).length;
+    if (window.confirm(`Hapus rencana "${name}" secara permanen? ${count} tugas dan ${countMilestones} milestone terkait akan ikut dihapus. Tindakan ini tidak dapat dibatalkan.`)) {
       deletePlan(id);
     }
   }
@@ -68,8 +69,7 @@ export default function PlansPage() {
       </Card>
       {matching.length ? <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {matching.map((plan) => {
-          const relevant = tasks.filter((task) => task.projectId === plan.id);
-          const progress = completionPercent(relevant);
+          const progress = getPlanProgress(plan, tasks, milestones);
           const KindIcon = plan.kind === "goal" ? Target : FolderKanban;
           return <Card key={plan.id} className="flex h-full flex-col p-5">
             <div className="flex items-start justify-between gap-2">
@@ -80,8 +80,8 @@ export default function PlansPage() {
             <p className="mt-2 min-h-12 text-sm text-slate-500 dark:text-slate-400">{plan.description || "Belum ada deskripsi."}</p>
             <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">{kindLabels[plan.kind]} · {categoryLabels[plan.category]} · {periodLabels[plan.period]}</p>
             <div className="mt-auto pt-6">
-              <div className="flex justify-between text-xs"><span className="text-slate-500">{relevant.length} tugas</span><span className="font-bold">{progress}%</span></div>
-              <div className="mt-2"><ProgressBar value={progress} label={`Progres ${plan.name}`}/></div>
+              <div className="flex justify-between text-xs"><span className="text-slate-500">{progress.caption}</span><span className="font-bold">{progress.percent}%</span></div>
+              <div className="mt-2"><ProgressBar value={progress.percent} label={`Progres ${plan.name}`}/></div>
               <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
                 <button type="button" className="inline-flex items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800" onClick={()=>setPlanArchived(plan.id, plan.status !== "archived")} aria-label={`${plan.status === "archived" ? "Aktifkan" : "Arsipkan"} ${plan.name}`}>{plan.status === "archived" ? <RotateCcw size={15}/> : <Archive size={15}/>} {plan.status === "archived" ? "Aktifkan" : "Arsipkan"}</button>
                 <button type="button" className="inline-flex items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950" onClick={()=>removePlan(plan.id,plan.name)} aria-label={`Hapus ${plan.name}`}><Trash2 size={15}/> Hapus</button>

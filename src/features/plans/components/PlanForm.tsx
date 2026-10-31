@@ -28,7 +28,13 @@ export function PlanForm({ initial, onClose }: { initial?: Plan; onClose: () => 
     if (validationError) { setError(validationError); return; }
     try {
       if (initial) {
-        updatePlan(initial.id, input);
+        // Mengganti Goal ke Proyek membuang konfigurasi indikator angka; konfirmasi terlebih dahulu.
+        if (initial.kind === "goal" && kind === "project" && !window.confirm("Ubah Goal menjadi Proyek? Pengaturan indikator angka akan dihapus. Milestone yang sudah ada harus dihapus terlebih dahulu.")) return;
+        const saved = updatePlan(initial.id, input);
+        if (!saved) {
+          setError("Tidak bisa mengubah Goal menjadi Proyek saat masih memiliki milestone. Hapus milestone terlebih dahulu.");
+          return;
+        }
         onClose();
       } else {
         const id = addPlan(input);
