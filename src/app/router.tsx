@@ -1,48 +1,33 @@
 import { Navigate, Route, Routes } from "react-router";
-
-import DashboardPage from "../features/dashboard/DashboardPage";
 import { AppLayout } from "../layouts/AppLayout";
+import DashboardPage from "../features/dashboard/DashboardPage";
+import ProjectsPage from "../features/projects/ProjectsPage";
+import ProjectDetailPage from "../features/projects/ProjectDetailPage";
+import TasksPage from "../features/tasks/TasksPage";
+import SettingsPage from "../features/settings/SettingsPage";
+import { AuthInfoPage } from "../features/auth/AuthInfoPage";
+import { Link } from "react-router";
 
-function Page({ title }: { title: string }) {
-  return (
-    <section className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-      <h2 className="text-2xl font-semibold">{title}</h2>
-
-      <p className="mt-2 text-slate-500">Halaman ini akan dikembangkan pada tahap berikutnya.</p>
-    </section>
-  );
+function NotFoundPage() {
+  return <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50 px-4 text-center dark:bg-slate-950"><p className="text-6xl font-black text-brand-600">404</p><h1 className="text-2xl font-bold">Halaman tidak ditemukan</h1><Link className="rounded-xl bg-brand-600 px-4 py-2.5 font-semibold text-white" to="/app/dashboard">Kembali ke Dashboard</Link></div>;
 }
 
 export function AppRouter() {
   return (
     <Routes>
-      {/* PUBLIC ROUTES */}
-      
-      {/*  <Route path="/" element={<Page title="Welcome to TaskFlow" />} /> */}
-
+      {/* Tahap 2: halaman awal menuju dashboard DEMO, belum protected route. */}
       <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
-
-      <Route path="/login" element={<Page title="Login" />} />
-
-      <Route path="/register" element={<Page title="Register" />} />
-
-      {/* APPLICATION ROUTES */}
+      <Route path="/login" element={<AuthInfoPage title="Login" />} />
+      <Route path="/register" element={<AuthInfoPage title="Registrasi" />} />
       <Route path="/app" element={<AppLayout />}>
         <Route index element={<Navigate to="dashboard" replace />} />
-
         <Route path="dashboard" element={<DashboardPage />} />
-
-        <Route path="projects" element={<Page title="Projects" />} />
-
-        <Route path="projects/:id" element={<Page title="Project Details" />} />
-
-        <Route path="tasks" element={<Page title="My Tasks" />} />
-
-        <Route path="settings/profile" element={<Page title="Profile Settings" />} />
+        <Route path="projects" element={<ProjectsPage />} />
+        <Route path="projects/:id" element={<ProjectDetailPage />} />
+        <Route path="tasks" element={<TasksPage />} />
+        <Route path="settings/profile" element={<SettingsPage />} />
       </Route>
-
-      {/* NOT FOUND */}
-      <Route path="*" element={<Page title="404 - Page Not Found" />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

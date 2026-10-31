@@ -1,69 +1,86 @@
-import { FolderKanban, LayoutDashboard, ListTodo, Settings } from "lucide-react";
-import { NavLink, Outlet } from "react-router";
+import { Link, NavLink, Outlet, useLocation } from "react-router";
+import { CheckCircle2, FolderKanban, LayoutDashboard, ListTodo, Moon, Sun, Settings2 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { useTheme } from "../hooks/themeContext";
 
-const navigation = [
-  {
-    label: "Dashboard",
-    path: "/app/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    label: "Projects",
-    path: "/app/projects",
-    icon: FolderKanban,
-  },
-  {
-    label: "My Tasks",
-    path: "/app/tasks",
-    icon: ListTodo,
-  },
-  {
-    label: "Settings",
-    path: "/app/settings/profile",
-    icon: Settings,
-  },
+const navigation: { to: string; label: string; icon: LucideIcon }[] = [
+  { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/app/projects", label: "Proyek", icon: FolderKanban },
+  { to: "/app/tasks", label: "Semua Tugas", icon: ListTodo },
+  { to: "/app/settings/profile", label: "Pengaturan", icon: Settings2 },
 ];
 
-export function AppLayout() {
+function ThemeToggle() {
+  const { theme, toggleTheme } = useTheme();
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <button
+      type="button"
+      onClick={toggleTheme}
+      aria-label={theme === "light" ? "Aktifkan mode gelap" : "Aktifkan mode terang"}
+      title={theme === "light" ? "Mode gelap" : "Mode terang"}
+      className="rounded-xl border border-slate-200 bg-white p-2.5 text-slate-600 transition hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-brand-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+    >
+      {theme === "light" ? <Moon size={19} aria-hidden="true" /> : <Sun size={19} aria-hidden="true" />}
+    </button>
+  );
+}
+
+function Navigation({ mobile = false }: { mobile?: boolean }) {
+  return (
+    <nav aria-label="Navigasi utama" className={mobile ? "flex gap-2 overflow-x-auto pb-1" : "space-y-1.5"}>
+      {navigation.map(({ to, label, icon: Icon }) => (
+        <NavLink
+          key={to}
+          to={to}
+          className={({ isActive }) => `flex shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-brand-600 ${isActive ? "bg-brand-50 text-brand-700 dark:bg-brand-600/15 dark:text-brand-100" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"}`}
+        >
+          <Icon size={18} aria-hidden="true" />
+          <span>{label}</span>
+        </NavLink>
+      ))}
+    </nav>
+  );
+}
+
+export function AppLayout() {
+  const { pathname } = useLocation();
+  const current = navigation.find(({ to }) => pathname === to || pathname.startsWith(`${to}/`));
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <div className="flex min-h-screen">
-        <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-white p-5 lg:block">
-          <h1 className="mb-8 text-2xl font-bold text-blue-600">TaskFlow</h1>
-
-          <nav className="space-y-2">
-            {navigation.map((item) => {
-              const Icon = item.icon;
-
-              return (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  className={({ isActive }) => `flex items-center gap-3 rounded-lg px-4 py-3 text-sm transition-colors ${isActive ? "bg-blue-50 font-medium text-blue-700" : "text-slate-600 hover:bg-slate-100"}`}
-                >
-                  <Icon size={18} />
-                  {item.label}
-                </NavLink>
-              );
-            })}
-          </nav>
+        {/* Sidebar desktop; navigasi mobile ditampilkan di bawah header. */}
+        <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-slate-200 bg-white px-4 py-6 dark:border-slate-800 dark:bg-slate-900 lg:flex">
+          <Link to="/app/dashboard" className="mb-10 flex items-center gap-3 px-3 text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-600 text-white"><CheckCircle2 size={23} /></span>
+            TaskFlow
+          </Link>
+          <p className="mb-3 px-3 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">Workspace</p>
+          <Navigation />
+          <div className="mt-auto rounded-xl border border-dashed border-slate-200 p-3 dark:border-slate-700">
+            <p className="text-sm font-semibold">Mode Demo</p>
+            <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Data disimpan di browser. Login dan database akan dibuat pada tahap berikutnya.</p>
+          </div>
         </aside>
 
-        <main className="min-w-0 flex-1 p-4 sm:p-8">
-          <header className="mb-6 lg:hidden">
-            <h1 className="text-xl font-bold text-blue-600">TaskFlow</h1>
-
-            <nav className="mt-4 flex gap-2 overflow-x-auto">
-              {navigation.map((item) => (
-                <NavLink key={item.path} to={item.path} className={({ isActive }) => `whitespace-nowrap rounded-lg px-3 py-2 text-sm ${isActive ? "bg-blue-600 text-white" : "bg-white text-slate-700"}`}>
-                  {item.label}
-                </NavLink>
-              ))}
-            </nav>
+        <div className="min-w-0 flex-1">
+          <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95">
+            <div className="mx-auto flex h-18 max-w-7xl items-center justify-between gap-3 px-4 sm:px-8">
+              <div>
+                <p className="text-xs font-medium text-slate-400 lg:hidden">TaskFlow · Demo</p>
+                <p className="text-base font-bold text-slate-900 dark:text-white">{current?.label ?? "TaskFlow"}</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="hidden rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 sm:inline-flex">● Local demo</span>
+                <ThemeToggle />
+              </div>
+            </div>
+            <div className="border-t border-slate-100 px-3 py-2 dark:border-slate-800 lg:hidden"><Navigation mobile /></div>
           </header>
-
-          <Outlet />
-        </main>
+          <main id="main-content" className="mx-auto max-w-7xl px-4 py-7 sm:px-8 sm:py-9">
+            <Outlet />
+          </main>
+        </div>
       </div>
     </div>
   );
