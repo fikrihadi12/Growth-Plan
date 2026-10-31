@@ -3,7 +3,7 @@ import type { CreateTaskInput, Task, TaskStatus } from "./types";
 
 export type TaskContextValue = {
   tasks: Task[];
-  addTask: (input: CreateTaskInput) => void;
+  addTask: (input: CreateTaskInput) => boolean;
   updateTaskStatus: (id: string, status: TaskStatus) => void;
   deleteTask: (id: string) => void;
   resetDemo: () => void;

@@ -1,11 +1,4 @@
-import type { Project, Task, TaskStatus } from "./types";
-
-// Data MOCK; seluruh nama proyek dan tugas contoh, belum tersimpan di database.
-export const projects: Project[] = [
-  { id: "p-learning", name: "E-Modul Interaktif", description: "Pengembangan materi pembelajaran digital", color: "bg-violet-500" },
-  { id: "p-portfolio", name: "Portfolio Website", description: "Website pribadi dan dokumentasi karya", color: "bg-sky-500" },
-  { id: "p-taskflow", name: "TaskFlow App", description: "Aplikasi manajemen proyek berbasis React", color: "bg-emerald-500" },
-];
+import type { Task, TaskStatus } from "./types";
 
 export const statusLabels: Record<TaskStatus, string> = {
   todo: "Belum mulai",
