@@ -4,6 +4,7 @@ import DashboardPage from "../features/dashboard/DashboardPage";
 import PlansPage from "../features/plans/PlansPage";
 import PlanDetailPage from "../features/plans/PlanDetailPage";
 import TasksPage from "../features/tasks/TasksPage";
+import HabitsPage from "../features/habits/HabitsPage";
 import SettingsPage from "../features/settings/SettingsPage";
 import { AuthInfoPage } from "../features/auth/AuthInfoPage";
 
@@ -30,6 +31,7 @@ export function AppRouter() {
         <Route path="projects" element={<LegacyProjectRedirect/>}/>
         <Route path="projects/:id" element={<LegacyProjectRedirect/>}/>
         <Route path="tasks" element={<TasksPage/>}/>
+        <Route path="habits" element={<HabitsPage/>}/>
         <Route path="settings/profile" element={<SettingsPage/>}/>
       </Route>
       <Route path="*" element={<NotFoundPage/>}/>

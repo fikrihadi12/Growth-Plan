@@ -15,7 +15,7 @@ const goal = {...basic,id:'goal-1',status:'active',createdAt:'2026-10-01T00:00:0
 const project = {...goal,id:'project-1',name:'Aplikasi React',kind:'project',goal:null};
 const task = {id:'task-1',projectId:goal.id,title:'Daftar gym',status:'todo',priority:'medium',dueDate:null,createdAt:'2026-10-01T00:00:00Z'};
 const milestone = {id:'milestone-1',planId:goal.id,title:'Menyelesaikan tahap 1',dueDate:null,createdAt:'2026-10-01T00:00:00Z',completedAt:null};
-const workspace=()=>({plans:[goal,project],tasks:[],milestones:[]});
+const workspace=()=>({plans:[goal,project],tasks:[],milestones:[],habits:[],habitLogs:[]});
 
 // 1. Business rules
 
@@ -105,7 +105,7 @@ test('mode goal dapat diganti, metric tidak hilang saat pindah mode',()=>{
 });
 
 test('hapus plan menghapus tugas dan milestone terkait, tidak menghapus data plan lain',()=>{
- const initial={plans:[goal,project],tasks:[task,{...task,id:'task-p',projectId:project.id}],milestones:[milestone]};
+ const initial={plans:[goal,project],tasks:[task,{...task,id:'task-p',projectId:project.id}],milestones:[milestone],habits:[],habitLogs:[]};
  const updated=removePlanAndTasks(initial,goal.id);
  assert.deepEqual(updated.plans.map(p=>p.id),[project.id]);
  assert.deepEqual(updated.tasks.map(t=>t.id),['task-p']);

@@ -29,10 +29,10 @@ export function PlanForm({ initial, onClose }: { initial?: Plan; onClose: () => 
     try {
       if (initial) {
         // Mengganti Goal ke Proyek membuang konfigurasi indikator angka; konfirmasi terlebih dahulu.
-        if (initial.kind === "goal" && kind === "project" && !window.confirm("Ubah Goal menjadi Proyek? Pengaturan indikator angka akan dihapus. Milestone yang sudah ada harus dihapus terlebih dahulu.")) return;
+        if (initial.kind === "goal" && kind === "project" && !window.confirm("Ubah Goal menjadi Proyek? Pengaturan indikator angka akan dihapus. Milestone dan habit yang sudah ada harus dihapus terlebih dahulu.")) return;
         const saved = updatePlan(initial.id, input);
         if (!saved) {
-          setError("Tidak bisa mengubah Goal menjadi Proyek saat masih memiliki milestone. Hapus milestone terlebih dahulu.");
+          setError("Tidak bisa mengubah Goal menjadi Proyek jika masih ada milestone atau habit. Hapus keduanya terlebih dahulu.");
           return;
         }
         onClose();
@@ -89,7 +89,7 @@ export function PlanForm({ initial, onClose }: { initial?: Plan; onClose: () => 
           <span className="text-sm font-semibold">Tanggal selesai (opsional)</span>
           <input type="date" min={startDate || undefined} value={endDate} onChange={(event) => setEndDate(event.target.value)} className={fieldClass} />
         </label>
-        <p className="text-xs leading-5 text-slate-500 dark:text-slate-400 sm:col-span-2">Periode harian/mingguan/bulanan/tahunan adalah horizon rencana. Frekuensi gym 1–7 kali per minggu akan hadir pada tahap Habit Tracker.</p>
+        <p className="text-xs leading-5 text-slate-500 dark:text-slate-400 sm:col-span-2">Periode harian/mingguan/bulanan/tahunan adalah horizon rencana. Frekuensi gym 1–7 kali per minggu dikelola di menu Habits pada Goal.</p>
         {error && <p role="alert" className="text-sm text-red-600 sm:col-span-2">{error}</p>}
         <div className="flex flex-wrap justify-end gap-2 sm:col-span-2">
           <Button variant="secondary" onClick={onClose}>Batal</Button>

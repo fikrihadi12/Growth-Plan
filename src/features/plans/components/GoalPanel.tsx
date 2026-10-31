@@ -137,7 +137,7 @@ export function GoalPanel({ plan }: { plan: Plan }) {
           {milestoneError && <p role="alert" className="text-sm text-red-600 sm:col-span-3">{milestoneError}</p>}
         </form>}
         {ownMilestones.length ? <div className="space-y-2">{ownMilestones.map((m) => <MilestoneRow key={m.id} milestone={m} archived={archived}/>)}</div> : <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500 dark:bg-slate-800">Belum ada milestone. Tambahkan langkah penting untuk mencapai Goal.</p>}
-        <p className="text-xs text-slate-500">Milestone hanya memengaruhi progress bar utama ketika metode "Berdasarkan milestone" dipilih. Habit berulang akan dikembangkan pada Tahap 4.</p>
+        <p className="text-xs text-slate-500">Milestone hanya memengaruhi progress bar utama ketika metode "Berdasarkan milestone" dipilih. Aktivitas berulang memiliki progres mingguan tersendiri di panel Habit dan tidak dihitung ganda di sini.</p>
       </Card>
     </section>
   );

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowRight, CheckCircle2, Clock3, FolderKanban, ListTodo, Plus, Target } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock3, FolderKanban, ListTodo, Plus, Target, Repeat2 } from "lucide-react";
 import { Link } from "react-router";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
@@ -12,16 +12,22 @@ import { useTasks } from "../tasks/taskContext";
 import { completionPercent } from "../tasks/demoData";
 import { getPlanProgress } from "../plans/goalProgress";
 import { usePlans } from "../plans/planContext";
+import { useHabits } from "../habits/habitContext";
+import { useCurrentLocalDate } from "../habits/useCurrentLocalDate";
+import { getWeeklyProgress } from "../habits/habitRules";
 import { categoryColors, kindLabels, periodLabels } from "../plans/planRules";
 
 export default function DashboardPage() {
   const { tasks } = useTasks();
   const { plans, milestones } = usePlans();
+  const { habits, habitLogs } = useHabits();
   const [showForm, setShowForm] = useState(false);
   const activePlans = plans.filter((plan)=>plan.status === "active");
   const activeIds = new Set(activePlans.map((plan)=>plan.id));
   // Ringkasan dashboard berfokus pada rencana aktif; arsip tetap ada di daftar rencana.
   const activeTasks = tasks.filter((task)=>activeIds.has(task.projectId));
+  const activeHabits = habits.filter((habit)=>activeIds.has(habit.planId));
+  const weekToday = useCurrentLocalDate();
   const completed = activeTasks.filter((task)=>task.status === "done").length;
   const inProgress = activeTasks.filter((task)=>task.status === "in_progress").length;
   const percent = completionPercent(activeTasks);
@@ -66,6 +72,19 @@ export default function DashboardPage() {
             </Link>;
           })}
         </div> : <Card className="p-5"><EmptyState message="Belum ada rencana aktif. Buat rencana pertamamu di halaman Rencana."/></Card>}
+      </section>
+      {/* Panel terpisah: progres habit selalu per-minggu, bukan progres kumulatif Goal. */}
+      <section aria-labelledby="habits-heading">
+        <div className="mb-4 flex items-center justify-between"><h2 id="habits-heading" className="flex items-center gap-2 text-xl font-bold"><Repeat2 size={21} className="text-brand-600"/> Aktivitas minggu ini</h2><Link to="/app/habits" className="text-sm font-semibold text-brand-600 hover:underline dark:text-brand-100">Kelola habits →</Link></div>
+        {activeHabits.length ? <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {activeHabits.slice(0, 6).map((habit) => {
+            const progress = getWeeklyProgress(habit, habitLogs, weekToday);
+            return <Link key={habit.id} to={`/app/plans/${habit.planId}`} className="block rounded-2xl focus-visible:outline-2 focus-visible:outline-brand-600"><Card className="h-full p-5">
+              <h3 className="font-bold">{habit.name}</h3><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{progress.completed} / {progress.target} sesi minggu ini</p>
+              <div className="mt-3"><ProgressBar value={progress.percent} label={`Progres mingguan ${habit.name}`}/></div><p className="mt-2 text-right text-xs font-bold text-brand-600">{progress.percent}%</p>
+            </Card></Link>;
+          })}
+        </div> : <Card className="p-5"><EmptyState message="Belum ada aktivitas berulang. Buat Habit pada Goal milikmu."/></Card>}
       </section>
       <section aria-labelledby="recent-heading">
         <div className="mb-4 flex items-center justify-between"><h2 id="recent-heading" className="text-xl font-bold">Tugas terbaru</h2><Link to="/app/tasks" className="text-sm font-semibold text-brand-600 hover:underline dark:text-brand-100">Semua tugas →</Link></div>

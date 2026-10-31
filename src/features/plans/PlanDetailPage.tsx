@@ -11,6 +11,8 @@ import { formatDate } from "../tasks/demoData";
 import { useTasks } from "../tasks/taskContext";
 import { PlanForm } from "./components/PlanForm";
 import { GoalPanel } from "./components/GoalPanel";
+import { HabitPanel } from "../habits/components/HabitPanel";
+import { useHabits } from "../habits/habitContext";
 import { usePlans } from "./planContext";
 import { getPlanProgress } from "./goalProgress";
 import { categoryLabels, kindLabels, periodLabels } from "./planRules";
@@ -20,6 +22,7 @@ export default function PlanDetailPage() {
   const navigate = useNavigate();
   const { plans, milestones, deletePlan, setPlanArchived } = usePlans();
   const { tasks } = useTasks();
+  const { habits, habitLogs } = useHabits();
   const [editing, setEditing] = useState(false);
   const [addingTask, setAddingTask] = useState(false);
   const plan = plans.find((item) => item.id === id);
@@ -30,11 +33,13 @@ export default function PlanDetailPage() {
 
   const relevant = tasks.filter((task) => task.projectId === plan.id);
   const relevantMilestones = milestones.filter((m) => m.planId === plan.id);
+  const relevantHabits = habits.filter((h) => h.planId === plan.id);
+  const relevantLogs = habitLogs.filter((log) => relevantHabits.some((habit) => habit.id === log.habitId));
   const progress = getPlanProgress(plan, tasks, milestones);
   const archived = plan.status === "archived";
 
   function remove() {
-    if (window.confirm(`Hapus rencana "${plan!.name}" secara permanen, bersama ${relevant.length} tugas dan ${relevantMilestones.length} milestone terkait?`)) {
+    if (window.confirm(`Hapus rencana "${plan!.name}" secara permanen, bersama ${relevant.length} tugas dan ${relevantMilestones.length} milestone, ${relevantHabits.length} habit, dan ${relevantLogs.length} catatan check-in terkait?`)) {
       deletePlan(plan!.id);
       navigate("/app/plans", { replace: true });
     }
@@ -50,12 +55,12 @@ export default function PlanDetailPage() {
           <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">Kategori: {categoryLabels[plan.category]} · Periode: {periodLabels[plan.period]} · {plan.startDate ? formatDate(plan.startDate) : "Mulai fleksibel"} — {plan.endDate ? formatDate(plan.endDate) : "Tanpa tanggal akhir"}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={() => {setEditing((v) => !v);setAddingTask(false);}}><Pencil size={16}/>{editing ? "Tutup edit" : "Edit"}</Button>
+          <Button variant="secondary" disabled={archived} onClick={() => {setEditing((v) => !v);setAddingTask(false);}}><Pencil size={16}/>{editing ? "Tutup edit" : "Edit"}</Button>
           <Button variant="secondary" onClick={() => {setPlanArchived(plan.id, !archived);setAddingTask(false);}}>{archived ? <RotateCcw size={16}/> : <Archive size={16}/>} {archived ? "Aktifkan" : "Arsipkan"}</Button>
           <Button variant="danger" onClick={remove}><Trash2 size={16}/> Hapus</Button>
         </div>
       </div>
-      {editing && <PlanForm key={plan.id} initial={plan} onClose={() => setEditing(false)}/>}
+      {editing && !archived && <PlanForm key={plan.id} initial={plan} onClose={() => setEditing(false)}/>}
 
       <Card className="p-5 sm:p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2"><div><h2 className="font-bold">{progress.label}</h2><p className="mt-1 text-xs text-slate-500">{plan.kind === "goal" ? "Mode dipilih pada panel Target & Milestone" : "Berdasarkan tugas proyek"}</p></div><span className="font-bold text-brand-600 dark:text-brand-100">{progress.percent}%</span></div>
@@ -66,10 +71,12 @@ export default function PlanDetailPage() {
 
       {/* Hanya Goal yang mempunyai metode progres angka dan milestone. */}
       {plan.kind === "goal" && <GoalPanel key={plan.id} plan={plan}/>}
+      {/* Habit merupakan progres mingguan tersendiri; tidak dijumlahkan dengan metode progres Goal. */}
+      {plan.kind === "goal" && <HabitPanel key={plan.id} planId={plan.id} archived={archived}/>}
 
       <section className="space-y-4" aria-labelledby="tasks-heading">
         <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 id="tasks-heading" className="text-xl font-bold">Daftar Tugas</h2>{plan.kind === "goal" && <p className="mt-1 text-xs text-slate-500">Tugas tetap tersedia sebagai langkah pendukung Goal, apa pun metode progresnya.</p>}</div>{!archived && <Button onClick={() => setAddingTask((v) => !v)}><Plus size={16}/>{addingTask ? "Tutup formulir" : "Tambah tugas"}</Button>}</div>
-        {archived && <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200">Rencana diarsipkan (mode baca saja). Aktifkan kembali untuk mengubah tugas, milestone, atau indikator progres.</p>}
+        {archived && <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200">Rencana diarsipkan (mode baca saja). Aktifkan kembali untuk mengubah tugas, milestone, habit, atau indikator progres.</p>}
         {addingTask && !archived && <TaskForm key={plan.id} initialProjectId={plan.id} onClose={() => setAddingTask(false)}/>}
         <Card className="space-y-2 p-3 sm:p-4">{relevant.length ? relevant.map((task) => <TaskRow key={task.id} task={task}/>) : <EmptyState message="Belum ada tugas untuk rencana ini."/>}</Card>
       </section>

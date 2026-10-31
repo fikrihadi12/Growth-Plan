@@ -7,6 +7,7 @@ import { ProgressBar } from "../../components/ui/ProgressBar";
 import { EmptyState } from "../../components/common/EmptyState";
 import { getPlanProgress } from "./goalProgress";
 import { useTasks } from "../tasks/taskContext";
+import { useHabits } from "../habits/habitContext";
 import { PlanForm } from "./components/PlanForm";
 import { usePlans } from "./planContext";
 import { categoryColors, categoryLabels, kindLabels, periodLabels } from "./planRules";
@@ -19,6 +20,7 @@ const controlClass = "rounded-xl border border-slate-200 bg-white px-3 py-2.5 te
 export default function PlansPage() {
   const { plans, milestones, deletePlan, setPlanArchived } = usePlans();
   const { tasks } = useTasks();
+  const { habits, habitLogs } = useHabits();
   const [showForm, setShowForm] = useState(false);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
@@ -33,7 +35,9 @@ export default function PlansPage() {
   function removePlan(id: string, name: string) {
     const count = tasks.filter((task) => task.projectId === id).length;
     const countMilestones = milestones.filter((m) => m.planId === id).length;
-    if (window.confirm(`Hapus rencana "${name}" secara permanen? ${count} tugas dan ${countMilestones} milestone terkait akan ikut dihapus. Tindakan ini tidak dapat dibatalkan.`)) {
+    const ownHabits = habits.filter((habit) => habit.planId === id);
+    const ownLogs = habitLogs.filter((log) => ownHabits.some((habit) => habit.id === log.habitId));
+    if (window.confirm(`Hapus rencana "${name}" secara permanen? ${count} tugas, ${countMilestones} milestone, ${ownHabits.length} habit dan ${ownLogs.length} catatan check-in ikut dihapus. Tidak dapat dibatalkan.`)) {
       deletePlan(id);
     }
   }

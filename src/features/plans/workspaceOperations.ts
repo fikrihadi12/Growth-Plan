@@ -1,9 +1,10 @@
 import type { GoalMetric, GoalProgressMode, Milestone, MilestoneInput, Plan } from "./types";
 import type { CreateTaskInput, Task } from "../tasks/types";
+import type { Habit, HabitLog } from "../habits/types";
 import { validateGoalMetric, validateMilestoneInput } from "./goalRules.ts";
 import { validateTaskInput } from "../tasks/taskRules.ts";
 
-export type WorkspaceData = { plans: Plan[]; tasks: Task[]; milestones: Milestone[] };
+export type WorkspaceData = { plans: Plan[]; tasks: Task[]; milestones: Milestone[]; habits: Habit[]; habitLogs: HabitLog[] };
 const canEdit = (data: WorkspaceData, id: string) => data.plans.some((plan) => plan.id === id && plan.status === "active");
 const canEditGoal = (data: WorkspaceData, id: string) => data.plans.some((plan) => plan.id === id && plan.status === "active" && plan.kind === "goal");
 
@@ -19,6 +20,8 @@ export function removePlanAndTasks(data: WorkspaceData, id: string): WorkspaceDa
     plans: data.plans.filter((plan) => plan.id !== id),
     tasks: data.tasks.filter((task) => task.projectId !== id),
     milestones: data.milestones.filter((milestone) => milestone.planId !== id),
+    habits: data.habits.filter((habit) => habit.planId !== id),
+    habitLogs: data.habitLogs.filter((log) => !data.habits.some((habit) => habit.planId === id && habit.id === log.habitId)),
   };
 }
 export function insertTask(data: WorkspaceData, task: Task): WorkspaceData {

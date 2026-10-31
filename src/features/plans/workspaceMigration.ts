@@ -1,12 +1,15 @@
 import { defaultGoalSettings, isGoalSettings, validateMilestoneInput } from "./goalRules.ts";
 import { isPlan, isDateISO } from "./planRules.ts";
+import { isHabit, isHabitLog } from "../habits/habitRules.ts";
 import type { Milestone, Plan } from "./types";
 import type { Task } from "../tasks/types";
+import type { Habit, HabitLog } from "../habits/types";
 import type { WorkspaceData } from "./workspaceOperations";
 
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value);
 const nonEmpty = (value: unknown): value is string => typeof value === "string" && value.length > 0;
 const unique = (values: string[]) => new Set(values).size === values.length;
+type WorkspaceV3 = Pick<WorkspaceData, "plans" | "tasks" | "milestones">;
 
 export function isTask(value: unknown): value is Task {
   if (!object(value)) return false;
@@ -23,8 +26,8 @@ export function isMilestone(value: unknown): value is Milestone {
     validateMilestoneInput({ title: value.title as string, dueDate: value.dueDate as string | null }) === null;
 }
 
-/** Versi 3: Goal memiliki konfigurasi progres, dan milestone terpisah dari tugas. */
-export function parseWorkspaceV3(value: unknown): WorkspaceData | null {
+/** V3: Goal Settings + milestones. Tetap tersedia untuk migrasi dan regression test. */
+export function parseWorkspaceV3(value: unknown): WorkspaceV3 | null {
   if (!object(value) || !Array.isArray(value.plans) || !Array.isArray(value.tasks) || !Array.isArray(value.milestones)) return null;
   if (!value.plans.every(isPlan) || !value.tasks.every(isTask) || !value.milestones.every(isMilestone)) return null;
   const plans = value.plans as Plan[];
@@ -38,7 +41,13 @@ export function parseWorkspaceV3(value: unknown): WorkspaceData | null {
   return { plans, tasks, milestones };
 }
 
-/** Migrasi V2 mempertahankan semua ID rencana dan tugas yang dibuat pengguna. */
+/** Menjaga seluruh ID dan data pengguna V3; tidak menimpa localStorage V3. */
+export function upgradeWorkspaceV3(value: unknown): WorkspaceData | null {
+  const old = parseWorkspaceV3(value);
+  return old ? { ...old, habits: [], habitLogs: [] } : null;
+}
+
+/** V2 -> V4 fallback: saat user melewati Tahap 3B, relasi tetap utuh. */
 export function upgradeWorkspaceV2(value: unknown): WorkspaceData | null {
   if (!object(value) || !Array.isArray(value.plans) || !Array.isArray(value.tasks)) return null;
   if (!value.plans.every(isPlan) || !value.tasks.every(isTask)) return null;
@@ -49,7 +58,26 @@ export function upgradeWorkspaceV2(value: unknown): WorkspaceData | null {
   if (!tasks.every((task) => ids.has(task.projectId))) return null;
   return {
     plans: plans.map((p) => ({ ...p, goal: p.kind === "goal" ? defaultGoalSettings() : null })),
-    tasks,
-    milestones: [],
+    tasks, milestones: [], habits: [], habitLogs: [],
   };
+}
+
+/** Validasi V4: termasuk foreign key Habit -> Goal, log -> Habit, dan 1 log per tanggal. */
+export function parseWorkspaceV4(value: unknown): WorkspaceData | null {
+  const old = parseWorkspaceV3(value);
+  if (!old || !object(value) || !Array.isArray(value.habits) || !Array.isArray(value.habitLogs)) return null;
+  if (!value.habits.every(isHabit) || !value.habitLogs.every(isHabitLog)) return null;
+  const habits = value.habits as Habit[];
+  const habitLogs = value.habitLogs as HabitLog[];
+  if (!unique(habits.map((habit) => habit.id)) || !unique(habitLogs.map((log) => log.id))) return null;
+  const plansById = new Map(old.plans.map((plan) => [plan.id, plan]));
+  const habitsById = new Map(habits.map((habit) => [habit.id, habit]));
+  if (!habits.every((habit) => plansById.get(habit.planId)?.kind === "goal")) return null;
+  if (!unique(habitLogs.map((log) => `${log.habitId}|${log.date}`))) return null;
+  if (!habitLogs.every((log) => {
+    const habit = habitsById.get(log.habitId);
+    return !!habit && isDateISO(log.date) && log.date >= habit.startDate &&
+      (habit.endDate === null || log.date <= habit.endDate);
+  })) return null;
+  return { ...old, habits, habitLogs };
 }

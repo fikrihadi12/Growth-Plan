@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useLocation } from "react-router";
-import { CheckCircle2, FolderKanban, LayoutDashboard, ListTodo, Moon, Sun, Settings2 } from "lucide-react";
+import { CheckCircle2, FolderKanban, LayoutDashboard, ListTodo, Moon, Sun, Settings2, Repeat2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useTheme } from "../hooks/themeContext";
 
@@ -7,6 +7,7 @@ const navigation: { to: string; label: string; icon: LucideIcon }[] = [
   { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/app/plans", label: "Rencana", icon: FolderKanban },
   { to: "/app/tasks", label: "Semua Tugas", icon: ListTodo },
+  { to: "/app/habits", label: "Habits", icon: Repeat2 },
   { to: "/app/settings/profile", label: "Pengaturan", icon: Settings2 },
 ];
 
@@ -59,7 +60,7 @@ export function AppLayout() {
           <Navigation />
           <div className="mt-auto rounded-xl border border-dashed border-slate-200 p-3 dark:border-slate-700">
             <p className="text-sm font-semibold">Mode Demo</p>
-            <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Rencana dan tugas tersimpan di browser ini. Belum ada akun atau sinkronisasi cloud.</p>
+            <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Rencana, tugas, dan habit tersimpan di browser ini. Belum ada akun atau sinkronisasi cloud.</p>
           </div>
         </aside>
 
