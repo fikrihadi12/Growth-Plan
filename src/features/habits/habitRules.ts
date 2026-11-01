@@ -1,5 +1,6 @@
 import { isDateISO } from "../plans/planRules.ts";
-import type { Habit, HabitInput, HabitLog } from "./types";
+import type { Habit, HabitInput, HabitLog, HabitTargetChange } from "./types";
+import { targetForWeek } from "./targetHistory.ts";
 
 export const weekDays = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"] as const;
 
@@ -78,14 +79,15 @@ export type WeeklyProgress = {
   extra: number;
   days: string[];
 };
-export function getWeeklyProgress(habit: Habit, logs: HabitLog[], date: string): WeeklyProgress {
+export function getWeeklyProgress(habit: Habit, logs: HabitLog[], date: string, history: HabitTargetChange[] = []): WeeklyProgress {
   const start = weekStartISO(date);
   const days = Array.from({ length: 7 }, (_, index) => addDaysISO(start, index));
   const end = days[6];
-  const completed = logs.filter((log) => log.habitId === habit.id && log.date >= start && log.date <= end).length;
+  const completed = new Set(logs.filter((log) => log.habitId === habit.id && log.date >= start && log.date <= end && log.date >= habit.startDate && (habit.endDate === null || log.date <= habit.endDate)).map((log) => log.date)).size;
+  const target = targetForWeek(habit, history, start);
   return {
-    start, end, days, completed, target: habit.weeklyTarget,
-    percent: Math.min(100, Math.round((completed / habit.weeklyTarget) * 100)),
-    extra: Math.max(0, completed - habit.weeklyTarget),
+    start, end, days, completed, target,
+    percent: Math.min(100, Math.round((completed / target) * 100)),
+    extra: Math.max(0, completed - target),
   };
 }

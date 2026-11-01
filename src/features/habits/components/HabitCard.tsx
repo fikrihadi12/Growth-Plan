@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import { CalendarDays, Check, ChevronLeft, ChevronRight, Pencil, Trash2 } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
@@ -10,7 +11,7 @@ import { useCurrentLocalDate } from "../useCurrentLocalDate";
 import { HabitForm } from "./HabitForm";
 
 export function HabitCard({ habit, archived }: { habit: Habit; archived: boolean }) {
-  const { habitLogs, toggleHabitCheckIn, deleteHabit } = useHabits();
+  const { habitLogs, habitTargets, toggleHabitCheckIn, deleteHabit } = useHabits();
   const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState("");
@@ -18,7 +19,7 @@ export function HabitCard({ habit, archived }: { habit: Habit; archived: boolean
   const currentWeek = weekStartISO(today);
   // null = selalu ikuti minggu berjalan, termasuk saat tab terbuka melewati Senin.
   const week = selectedWeek ?? currentWeek;
-  const progress = getWeeklyProgress(habit, habitLogs, week);
+  const progress = getWeeklyProgress(habit, habitLogs, week, habitTargets);
   const finished = new Set(habitLogs.filter((log) => log.habitId === habit.id).map((log) => log.date));
 
   function checkIn(date: string) {
@@ -34,7 +35,7 @@ export function HabitCard({ habit, archived }: { habit: Habit; archived: boolean
     <Card className="space-y-4 p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0"><h3 className="text-lg font-bold">{habit.name}</h3>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Target {habit.weeklyTarget} kali / minggu · {habit.endDate ? `sampai ${habit.endDate}` : "tanpa tanggal akhir"}</p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Target minggu dipilih {progress.target} kali / minggu · {habit.endDate ? `sampai ${habit.endDate}` : "tanpa tanggal akhir"}</p>
           {habit.scheduledDays.length > 0 && <p className="mt-1 text-xs text-slate-500">Hari rencana: {habit.scheduledDays.map((day) => weekDays[day]).join(", ")}</p>}
         </div>
         {!archived && <div className="flex gap-2"><Button variant="secondary" onClick={() => setEditing((v) => !v)} aria-label={`Edit ${habit.name}`}><Pencil size={16}/></Button><Button variant="danger" onClick={remove} aria-label={`Hapus ${habit.name}`}><Trash2 size={16}/></Button></div>}
@@ -63,6 +64,7 @@ export function HabitCard({ habit, archived }: { habit: Habit; archived: boolean
           </button>;
         })}
       </div>
+      <Link to={`/app/analytics?goal=${encodeURIComponent(habit.planId)}&habit=${encodeURIComponent(habit.id)}`} className="inline-flex text-sm font-semibold text-brand-600 hover:underline">Lihat evaluasi & refleksi →</Link>
       {archived && <p className="text-xs text-amber-700 dark:text-amber-300">Goal diarsipkan. Riwayat dapat dilihat, tetapi tidak dapat diubah.</p>}
       {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
     </Card>

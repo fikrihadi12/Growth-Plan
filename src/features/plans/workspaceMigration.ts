@@ -3,13 +3,17 @@ import { isPlan, isDateISO } from "./planRules.ts";
 import { isHabit, isHabitLog } from "../habits/habitRules.ts";
 import type { Milestone, Plan } from "./types";
 import type { Task } from "../tasks/types";
-import type { Habit, HabitLog } from "../habits/types";
+import type { Habit, HabitLog, HabitReflection, HabitTargetChange } from "../habits/types";
+import { isHabitTargetChange, baselineTarget } from "../habits/targetHistory.ts";
+import { isHabitReflection } from "../habits/reflectionRules.ts";
+import { weekStartISO } from "../habits/habitRules.ts";
 import type { WorkspaceData } from "./workspaceOperations";
 
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value);
 const nonEmpty = (value: unknown): value is string => typeof value === "string" && value.length > 0;
 const unique = (values: string[]) => new Set(values).size === values.length;
 type WorkspaceV3 = Pick<WorkspaceData, "plans" | "tasks" | "milestones">;
+type WorkspaceV4 = Pick<WorkspaceData, "plans" | "tasks" | "milestones" | "habits" | "habitLogs">;
 
 export function isTask(value: unknown): value is Task {
   if (!object(value)) return false;
@@ -42,13 +46,13 @@ export function parseWorkspaceV3(value: unknown): WorkspaceV3 | null {
 }
 
 /** Menjaga seluruh ID dan data pengguna V3; tidak menimpa localStorage V3. */
-export function upgradeWorkspaceV3(value: unknown): WorkspaceData | null {
+export function upgradeWorkspaceV3(value: unknown): WorkspaceV4 | null {
   const old = parseWorkspaceV3(value);
   return old ? { ...old, habits: [], habitLogs: [] } : null;
 }
 
 /** V2 -> V4 fallback: saat user melewati Tahap 3B, relasi tetap utuh. */
-export function upgradeWorkspaceV2(value: unknown): WorkspaceData | null {
+export function upgradeWorkspaceV2(value: unknown): WorkspaceV4 | null {
   if (!object(value) || !Array.isArray(value.plans) || !Array.isArray(value.tasks)) return null;
   if (!value.plans.every(isPlan) || !value.tasks.every(isTask)) return null;
   const plans = value.plans as Plan[];
@@ -63,7 +67,7 @@ export function upgradeWorkspaceV2(value: unknown): WorkspaceData | null {
 }
 
 /** Validasi V4: termasuk foreign key Habit -> Goal, log -> Habit, dan 1 log per tanggal. */
-export function parseWorkspaceV4(value: unknown): WorkspaceData | null {
+export function parseWorkspaceV4(value: unknown): WorkspaceV4 | null {
   const old = parseWorkspaceV3(value);
   if (!old || !object(value) || !Array.isArray(value.habits) || !Array.isArray(value.habitLogs)) return null;
   if (!value.habits.every(isHabit) || !value.habitLogs.every(isHabitLog)) return null;
@@ -80,4 +84,40 @@ export function parseWorkspaceV4(value: unknown): WorkspaceData | null {
       (habit.endDate === null || log.date <= habit.endDate);
   })) return null;
   return { ...old, habits, habitLogs };
+}
+
+/** Migrasi V4→V5: target historis sebelumnya tidak diketahui, jadi target V4 menjadi baseline. */
+export function upgradeWorkspaceV4(value: unknown): WorkspaceData | null {
+  const old = parseWorkspaceV4(value);
+  if (!old) return null;
+  return {
+    ...old,
+    habitTargets: old.habits.map((h) => baselineTarget(h, weekStartISO(h.startDate))),
+    reflections: [],
+  };
+}
+
+/** Validator V5: semua relasi, snapshot dan refleksi diperiksa sebelum dipakai. */
+export function parseWorkspaceV5(value: unknown): WorkspaceData | null {
+  const old = parseWorkspaceV4(value);
+  if (!old || !object(value) || !Array.isArray(value.habitTargets) || !Array.isArray(value.reflections)) return null;
+  if (!value.habitTargets.every(isHabitTargetChange) || !value.reflections.every(isHabitReflection)) return null;
+  const habitTargets = value.habitTargets as HabitTargetChange[];
+  const reflections = value.reflections as HabitReflection[];
+  const habitsById = new Map(old.habits.map((h) => [h.id, h]));
+  if (!unique(habitTargets.map((h) => `${h.habitId}|${h.effectiveWeek}`)) ||
+      !unique(reflections.map((r) => r.id)) ||
+      !unique(reflections.map((r) => `${r.habitId}|${r.weekStart}`))) return null;
+  if (!habitTargets.every((h) => {
+    const habit = habitsById.get(h.habitId);
+    return !!habit && h.effectiveWeek >= weekStartISO(habit.startDate);
+  })) return null;
+  if (!old.habits.every((habit) => habitTargets.some((h) =>
+      h.habitId === habit.id && h.effectiveWeek === weekStartISO(habit.startDate)))) return null;
+  if (!reflections.every((r) => {
+    const habit = habitsById.get(r.habitId);
+    return !!habit && r.weekStart >= weekStartISO(habit.startDate) &&
+      (habit.endDate === null || r.weekStart <= habit.endDate);
+  })) return null;
+  return { ...old, habitTargets, reflections };
 }

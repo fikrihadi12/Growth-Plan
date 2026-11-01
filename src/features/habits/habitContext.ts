@@ -1,9 +1,13 @@
 import { createContext, useContext } from "react";
-import type { Habit, HabitInput, HabitLog } from "./types";
+import type { Habit, HabitInput, HabitLog, HabitTargetChange, HabitReflection } from "./types";
 
 export type HabitContextValue = {
   habits: Habit[];
   habitLogs: HabitLog[];
+  habitTargets: HabitTargetChange[];
+  reflections: HabitReflection[];
+  saveHabitReflection: (habitId: string, weekStart: string, note: string, rating: number | null) => boolean;
+  deleteHabitReflection: (habitId: string, weekStart: string) => void;
   addHabit: (planId: string, input: HabitInput) => boolean;
   updateHabit: (id: string, input: HabitInput) => boolean;
   deleteHabit: (id: string) => void;

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { Plus, Repeat2, Search } from "lucide-react";
+import { Plus, Repeat2, Search, BarChart3 } from "lucide-react";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { usePlans } from "../plans/planContext";
@@ -14,7 +14,7 @@ const selectClass = "rounded-xl border border-slate-200 bg-white px-3 py-2.5 tex
 
 export default function HabitsPage() {
   const { plans } = usePlans();
-  const { habits, habitLogs } = useHabits();
+  const { habits, habitLogs, habitTargets } = useHabits();
   const activeGoals = plans.filter((plan) => plan.kind === "goal" && plan.status === "active");
   const [planId, setPlanId] = useState("");
   const [adding, setAdding] = useState(false);
@@ -26,12 +26,13 @@ export default function HabitsPage() {
   });
   const activeHabits = habits.filter((habit) => activeGoals.some((plan) => plan.id === habit.planId));
   const today = useCurrentLocalDate();
-  const achieved = activeHabits.filter((habit) => getWeeklyProgress(habit, habitLogs, today).completed >= habit.weeklyTarget).length;
+  const achieved = activeHabits.filter((habit) => getWeeklyProgress(habit, habitLogs, today, habitTargets).percent === 100).length;
 
   return <div className="space-y-6">
     <div className="flex flex-wrap items-end justify-between gap-4">
       <div><p className="text-xs font-bold uppercase tracking-widest text-brand-600">Habit tracker</p><h1 className="mt-1 text-3xl font-extrabold">Kebiasaan Saya</h1><p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Catat sesi harian. Progres dimulai lagi setiap Senin, tanpa menghapus riwayat.</p></div>
-      <Button disabled={!activeGoals.length} onClick={() => setAdding((value) => !value)}><Plus size={17}/>{adding ? "Tutup formulir" : "Buat habit"}</Button>
+      <div className="flex flex-wrap gap-2"><Link to="/app/analytics" className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"><BarChart3 size={17}/> Lihat Analitik</Link>
+        <Button disabled={!activeGoals.length} onClick={() => setAdding((value) => !value)}><Plus size={17}/>{adding ? "Tutup formulir" : "Buat habit"}</Button></div>
     </div>
     <div className="grid gap-3 sm:grid-cols-3">
       <Card className="p-4"><p className="text-xs text-slate-500">Seluruh habit</p><p className="mt-2 text-2xl font-bold">{habits.length}</p></Card>

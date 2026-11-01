@@ -17,3 +17,20 @@ export type HabitLog = {
   date: string; // YYYY-MM-DD; unik per (habitId, date)
   createdAt: string;
 };
+
+/** Catatan perubahan target; 1 snapshot per habit per minggu (Senin). */
+export type HabitTargetChange = {
+  habitId: string;
+  effectiveWeek: string;
+  target: number;
+  changedAt: string;
+};
+/** Jurnal evaluasi per kebiasaan untuk satu minggu, bukan log latihan. */
+export type HabitReflection = {
+  id: string;
+  habitId: string;
+  weekStart: string;
+  note: string;
+  rating: number | null;
+  updatedAt: string;
+};

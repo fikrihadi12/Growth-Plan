@@ -20,7 +20,7 @@ import { categoryColors, kindLabels, periodLabels } from "../plans/planRules";
 export default function DashboardPage() {
   const { tasks } = useTasks();
   const { plans, milestones } = usePlans();
-  const { habits, habitLogs } = useHabits();
+  const { habits, habitLogs, habitTargets } = useHabits();
   const [showForm, setShowForm] = useState(false);
   const activePlans = plans.filter((plan)=>plan.status === "active");
   const activeIds = new Set(activePlans.map((plan)=>plan.id));
@@ -36,7 +36,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-7">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div><p className="mb-1 text-xs font-bold uppercase tracking-[0.18em] text-brand-600 dark:text-brand-100">Workspace overview</p><h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Selamat datang di TaskFlow <span aria-hidden="true">👋</span></h1><p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Kelola proyek, goal pribadi, dan prioritasmu dari satu tempat.</p></div>
+        <div><p className="mb-1 text-xs font-bold uppercase tracking-[0.18em] text-brand-600 dark:text-brand-100">Workspace overview</p><h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Selamat datang di GrowthPlan <span aria-hidden="true">👋</span></h1><p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Kelola proyek, goal pribadi, dan prioritasmu dari satu tempat.</p></div>
         <div className="flex flex-wrap gap-2"><Link to="/app/plans" className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-brand-600 px-4 py-2 text-sm font-semibold text-brand-600 hover:bg-brand-50 dark:text-brand-100"><Plus size={17}/> Rencana baru</Link><Button onClick={()=>setShowForm((v)=>!v)} aria-expanded={showForm}><Plus size={17}/>{showForm ? "Tutup formulir" : "Tambah tugas"}</Button></div>
       </div>
       {showForm && <TaskForm onClose={()=>setShowForm(false)}/>}
@@ -78,13 +78,18 @@ export default function DashboardPage() {
         <div className="mb-4 flex items-center justify-between"><h2 id="habits-heading" className="flex items-center gap-2 text-xl font-bold"><Repeat2 size={21} className="text-brand-600"/> Aktivitas minggu ini</h2><Link to="/app/habits" className="text-sm font-semibold text-brand-600 hover:underline dark:text-brand-100">Kelola habits →</Link></div>
         {activeHabits.length ? <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {activeHabits.slice(0, 6).map((habit) => {
-            const progress = getWeeklyProgress(habit, habitLogs, weekToday);
+            const progress = getWeeklyProgress(habit, habitLogs, weekToday, habitTargets);
             return <Link key={habit.id} to={`/app/plans/${habit.planId}`} className="block rounded-2xl focus-visible:outline-2 focus-visible:outline-brand-600"><Card className="h-full p-5">
               <h3 className="font-bold">{habit.name}</h3><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{progress.completed} / {progress.target} sesi minggu ini</p>
               <div className="mt-3"><ProgressBar value={progress.percent} label={`Progres mingguan ${habit.name}`}/></div><p className="mt-2 text-right text-xs font-bold text-brand-600">{progress.percent}%</p>
             </Card></Link>;
           })}
         </div> : <Card className="p-5"><EmptyState message="Belum ada aktivitas berulang. Buat Habit pada Goal milikmu."/></Card>}
+      </section>
+      <section aria-label="Ringkasan evaluasi pribadi">
+        <Link to="/app/analytics" className="block rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-brand-300 hover:shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-bold">Evaluasi & Analitik</h2><p className="mt-1 text-sm text-slate-500">Lihat tren mingguan/bulanan, konsistensi tahunan, target historis, dan refleksi pribadi.</p></div><span className="text-sm font-semibold text-brand-600">Lihat evaluasi →</span></div>
+        </Link>
       </section>
       <section aria-labelledby="recent-heading">
         <div className="mb-4 flex items-center justify-between"><h2 id="recent-heading" className="text-xl font-bold">Tugas terbaru</h2><Link to="/app/tasks" className="text-sm font-semibold text-brand-600 hover:underline dark:text-brand-100">Semua tugas →</Link></div>

@@ -1,17 +1,9 @@
 import { BrowserRouter } from "react-router";
 import { AppRouter } from "./router";
 import { ThemeProvider } from "../hooks/ThemeProvider";
-import { TaskProvider } from "../features/tasks/TaskProvider";
+import { AuthProvider } from "../features/auth/AuthProvider";
 
 export default function App() {
-  // Provider bersifat global: semua halaman membaca tema dan daftar tugas yang sama.
-  return (
-    <BrowserRouter>
-      <ThemeProvider>
-        <TaskProvider>
-          <AppRouter />
-        </TaskProvider>
-      </ThemeProvider>
-    </BrowserRouter>
-  );
+  // Auth membatasi workspace ke akun aktif, Theme tetap bisa dipakai di halaman publik.
+  return <BrowserRouter><ThemeProvider><AuthProvider><AppRouter /></AuthProvider></ThemeProvider></BrowserRouter>;
 }

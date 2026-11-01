@@ -1,97 +1,33 @@
-import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { createDemoTasks } from "./demoData";
 import { TaskContext } from "./taskContext";
 import { validateTaskInput } from "./taskRules";
 import type { CreateTaskInput, Task, TaskStatus } from "./types";
 import { PlanContext } from "../plans/planContext";
-import { createDemoPlans } from "../plans/demoPlans";
 import { validatePlanInput } from "../plans/planRules";
 import { defaultGoalSettings, isGoalProgressMode, validateGoalMetric, validateMilestoneInput } from "../plans/goalRules";
-import { isTask, parseWorkspaceV4, upgradeWorkspaceV3, upgradeWorkspaceV2 } from "../plans/workspaceMigration";
 import type { GoalMetric, GoalProgressMode, Milestone, MilestoneInput, Plan, PlanInput } from "../plans/types";
 import {
   insertPlan, replacePlan, removePlanAndTasks,
   insertTask, replaceTaskInWorkspace, updateTaskInWorkspace, removeTaskFromWorkspace,
   changeGoalMode, setGoalMetric, insertMilestone, replaceMilestone, setMilestoneComplete, removeMilestone,
 } from "../plans/workspaceOperations";
-import type { WorkspaceData } from "../plans/workspaceOperations";
-import type { Habit, HabitInput, HabitLog } from "../habits/types";
+import type { Habit, HabitInput, HabitLog, HabitReflection } from "../habits/types";
 import { canCheckIn, todayLocalISO, validateHabitInput } from "../habits/habitRules";
-import { insertHabit, replaceHabit, removeHabitAndLogs, toggleHabitLog } from "../habits/habitOperations";
+import { insertHabit, replaceHabit, removeHabitAndLogs, toggleHabitLog, saveReflection, removeReflection } from "../habits/habitOperations";
+import { validateReflection } from "../habits/reflectionRules";
+import { weekStartISO } from "../habits/habitRules";
+import { isDateISO } from "../plans/planRules";
 import { HabitContext } from "../habits/habitContext";
+import { CloudContext } from "../cloud/cloudContext";
+import { useCloudWorkspace } from "../cloud/useCloudWorkspace";
+import CloudRecoveryScreen from "../cloud/CloudRecoveryScreen";
+import { emptyWorkspace } from "../cloud/cloudRules";
 
-const STORAGE_KEY = "taskflow.demo.workspace.v4";
-const V3_KEY = "taskflow.demo.workspace.v3";
-const V2_KEY = "taskflow.demo.workspace.v2";
-const OLD_TASKS_KEY = "taskflow.demo.tasks.v1";
-
-function demoWorkspace(): WorkspaceData {
-  return { plans: createDemoPlans(), tasks: createDemoTasks(), milestones: [], habits: [], habitLogs: [] };
-}
-
-function backupInvalid(key: string, raw: string) {
-  try { window.localStorage.setItem(`${key}.invalid-backup`, raw); }
-  catch { /* Penyimpanan browser dapat diblokir. */ }
-}
-
-function readWorkspace(): WorkspaceData {
-  // Migrasi V3 -> V4 (fallback V2); kunci lama tidak dihapus.
-  try {
-    const rawV4 = window.localStorage.getItem(STORAGE_KEY);
-    if (rawV4 !== null) {
-      try {
-        const parsed = parseWorkspaceV4(JSON.parse(rawV4));
-        if (parsed) return parsed;
-      } catch { /* JSON rusak. */ }
-      backupInvalid(STORAGE_KEY, rawV4);
-    }
-
-    const rawV3 = window.localStorage.getItem(V3_KEY);
-    if (rawV3 !== null) {
-      try {
-        const upgraded = upgradeWorkspaceV3(JSON.parse(rawV3));
-        if (upgraded) return upgraded;
-      } catch { /* JSON rusak. */ }
-      backupInvalid(V3_KEY, rawV3);
-    }
-
-    const rawV2 = window.localStorage.getItem(V2_KEY);
-    if (rawV2 !== null) {
-      try {
-        const upgraded = upgradeWorkspaceV2(JSON.parse(rawV2));
-        if (upgraded) return upgraded;
-      } catch { /* JSON rusak. */ }
-      backupInvalid(V2_KEY, rawV2);
-    }
-
-    const initial = demoWorkspace();
-    const rawLegacy = window.localStorage.getItem(OLD_TASKS_KEY);
-    if (rawLegacy !== null) {
-      try {
-        const value: unknown = JSON.parse(rawLegacy);
-        if (Array.isArray(value) && value.every(isTask)) {
-          const knownIds = new Set(initial.plans.map((p) => p.id));
-          if (value.every((task) => knownIds.has(task.projectId))) initial.tasks = value as Task[];
-        }
-      } catch { /* Abaikan format lama yang rusak. */ }
-    }
-    return initial;
-  } catch {
-    // Demo tetap berfungsi dalam memori jika localStorage diblokir.
-    return demoWorkspace();
-  }
-}
-
-export function TaskProvider({ children }: { children: ReactNode }) {
-  // Atomic workspace: relasi Plan -> Task/Milestone/Habit/Log tetap konsisten.
-  const [workspace, setWorkspace] = useState<WorkspaceData>(readWorkspace);
-  const { plans, tasks, milestones, habits, habitLogs } = workspace;
-
-  useEffect(() => {
-    try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(workspace)); }
-    catch { /* Data tetap ada sementara di memori. */ }
-  }, [workspace]);
+export function TaskProvider({ children, userId }: { children: ReactNode; userId: string }) {
+  // Seluruh state lama tetap digunakan, tetapi disimpan ke Supabase dengan versi CAS.
+  const cloud = useCloudWorkspace(userId);
+  const { workspace, setWorkspace } = cloud;
+  const { plans, tasks, milestones, habits, habitLogs, habitTargets, reflections } = workspace;
 
   function addPlan(input: PlanInput): string {
     const error = validatePlanInput(input);
@@ -210,7 +146,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     // Perubahan rentang tanggal tidak boleh membuang log historis diam-diam.
     if (habitLogs.some((log) => log.habitId === id && (log.date < input.startDate ||
       (input.endDate !== null && log.date > input.endDate)))) return false;
-    setWorkspace((old) => replaceHabit(old, id, input, new Date().toISOString()));
+    setWorkspace((old) => replaceHabit(old, id, input, new Date().toISOString(), todayLocalISO()));
     return true;
   }
   function deleteHabit(id: string) { setWorkspace((old) => removeHabitAndLogs(old, id)); }
@@ -224,18 +160,47 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     })));
     return true;
   }
-  function resetDemo() { setWorkspace(demoWorkspace()); }
+  function saveHabitReflection(habitId: string, weekStart: string, note: string, rating: number | null): boolean {
+    const habit = habits.find((h) => h.id === habitId);
+    if (!habit || !plans.some((p) => p.id === habit.planId && p.kind === "goal" && p.status === "active") ||
+        validateReflection(note, rating) || !isDateISO(weekStart) || weekStart !== weekStartISO(weekStart) ||
+        weekStart > weekStartISO(todayLocalISO()) || weekStart < weekStartISO(habit.startDate) ||
+        (habit.endDate !== null && weekStart > habit.endDate)) return false;
+    const now = new Date().toISOString();
+    const entry: HabitReflection = { id: crypto.randomUUID(), habitId, weekStart, note, rating, updatedAt: now };
+    setWorkspace((old) => saveReflection(old, entry, todayLocalISO()));
+    return true;
+  }
+  function deleteHabitReflection(habitId: string, weekStart: string) {
+    setWorkspace((old) => removeReflection(old, habitId, weekStart));
+  }
+  function resetDemo() { setWorkspace(emptyWorkspace()); }
 
+  const cloudValue = {
+    phase: cloud.phase, error: cloud.error, draft: cloud.draft,
+    retrySave: cloud.retrySave, reloadCloud: cloud.reloadCloud,
+    recoverDraft: cloud.recoverDraft, discardDraft: cloud.discardDraft,
+    importLocalData: cloud.importLocalData, availableLocalData: cloud.availableLocalData,
+    exportBackup: cloud.exportBackup,
+  };
+  if (cloud.phase === "loading") {
+    return <div role="status" className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-600 dark:bg-slate-950 dark:text-slate-300">Memuat workspace dari Supabase…</div>;
+  }
+  if (cloud.phase === "fatal" || cloud.phase === "recovery" || cloud.phase === "conflict") {
+    return <CloudContext.Provider value={cloudValue}><CloudRecoveryScreen /></CloudContext.Provider>;
+  }
   return (
-    <TaskContext.Provider value={{ tasks, addTask, updateTask, updateTaskStatus, deleteTask, resetDemo }}>
-      <PlanContext.Provider value={{
-        plans, milestones, addPlan, updatePlan, setPlanArchived, deletePlan,
-        setGoalMode, updateGoalMetric, addMilestone, updateMilestone, toggleMilestone, deleteMilestone,
-      }}>
-        <HabitContext.Provider value={{ habits, habitLogs, addHabit, updateHabit, deleteHabit, toggleHabitCheckIn }}>
-          {children}
-        </HabitContext.Provider>
-      </PlanContext.Provider>
-    </TaskContext.Provider>
+    <CloudContext.Provider value={cloudValue}>
+      <TaskContext.Provider value={{ tasks, addTask, updateTask, updateTaskStatus, deleteTask, resetDemo }}>
+        <PlanContext.Provider value={{
+          plans, milestones, addPlan, updatePlan, setPlanArchived, deletePlan,
+          setGoalMode, updateGoalMetric, addMilestone, updateMilestone, toggleMilestone, deleteMilestone,
+        }}>
+          <HabitContext.Provider value={{ habits, habitLogs, habitTargets, reflections, addHabit, updateHabit, deleteHabit, toggleHabitCheckIn, saveHabitReflection, deleteHabitReflection }}>
+            {children}
+          </HabitContext.Provider>
+        </PlanContext.Provider>
+      </TaskContext.Provider>
+    </CloudContext.Provider>
   );
 }

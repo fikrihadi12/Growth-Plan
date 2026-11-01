@@ -27,7 +27,7 @@ export function HabitForm({ planId, initial, onClose }: { planId: string; initia
     if (invalid) { setError(invalid); return; }
     const saved = initial ? updateHabit(initial.id, input) : addHabit(planId, input);
     if (!saved) {
-      setError("Gagal menyimpan. Pastikan Goal masih aktif dan tanggal baru tidak mengecualikan riwayat check-in.");
+      setError("Gagal menyimpan. Pastikan Goal masih aktif dan tanggal baru tidak mengecualikan riwayat check-in atau refleksi.");
       return;
     }
     onClose();
@@ -37,7 +37,7 @@ export function HabitForm({ planId, initial, onClose }: { planId: string; initia
     <Card className="p-5 sm:p-6">
       <div className="mb-4">
         <h3 className="text-lg font-bold">{initial ? "Edit kebiasaan" : "Buat kebiasaan baru"}</h3>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Contoh: Gym 3 kali per minggu selama 12 minggu.</p>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Contoh: Gym 3 kali per minggu selama 12 minggu. Jika target diubah, hanya minggu berjalan dan minggu berikutnya yang memakai target baru.</p>
       </div>
       <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
         <label className="sm:col-span-2 text-sm font-semibold">Nama aktivitas *

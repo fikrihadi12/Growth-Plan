@@ -1,10 +1,10 @@
 import type { GoalMetric, GoalProgressMode, Milestone, MilestoneInput, Plan } from "./types";
 import type { CreateTaskInput, Task } from "../tasks/types";
-import type { Habit, HabitLog } from "../habits/types";
+import type { Habit, HabitLog, HabitTargetChange, HabitReflection } from "../habits/types";
 import { validateGoalMetric, validateMilestoneInput } from "./goalRules.ts";
 import { validateTaskInput } from "../tasks/taskRules.ts";
 
-export type WorkspaceData = { plans: Plan[]; tasks: Task[]; milestones: Milestone[]; habits: Habit[]; habitLogs: HabitLog[] };
+export type WorkspaceData = { plans: Plan[]; tasks: Task[]; milestones: Milestone[]; habits: Habit[]; habitLogs: HabitLog[]; habitTargets: HabitTargetChange[]; reflections: HabitReflection[] };
 const canEdit = (data: WorkspaceData, id: string) => data.plans.some((plan) => plan.id === id && plan.status === "active");
 const canEditGoal = (data: WorkspaceData, id: string) => data.plans.some((plan) => plan.id === id && plan.status === "active" && plan.kind === "goal");
 
@@ -22,6 +22,8 @@ export function removePlanAndTasks(data: WorkspaceData, id: string): WorkspaceDa
     milestones: data.milestones.filter((milestone) => milestone.planId !== id),
     habits: data.habits.filter((habit) => habit.planId !== id),
     habitLogs: data.habitLogs.filter((log) => !data.habits.some((habit) => habit.planId === id && habit.id === log.habitId)),
+    habitTargets: (data.habitTargets ?? []).filter((entry) => !data.habits.some((habit) => habit.planId === id && habit.id === entry.habitId)),
+    reflections: (data.reflections ?? []).filter((entry) => !data.habits.some((habit) => habit.planId === id && habit.id === entry.habitId)),
   };
 }
 export function insertTask(data: WorkspaceData, task: Task): WorkspaceData {

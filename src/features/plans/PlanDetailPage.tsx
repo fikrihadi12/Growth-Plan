@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Archive, ArrowLeft, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Archive, ArrowLeft, Pencil, Plus, RotateCcw, Trash2, ChartNoAxesCombined } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
@@ -73,6 +73,7 @@ export default function PlanDetailPage() {
       {plan.kind === "goal" && <GoalPanel key={plan.id} plan={plan}/>}
       {/* Habit merupakan progres mingguan tersendiri; tidak dijumlahkan dengan metode progres Goal. */}
       {plan.kind === "goal" && <HabitPanel key={plan.id} planId={plan.id} archived={archived}/>}
+      {plan.kind === "goal" && <Link className="inline-flex items-center gap-2 text-sm font-semibold text-brand-600 hover:underline" to={`/app/analytics?goal=${encodeURIComponent(plan.id)}`}><ChartNoAxesCombined size={17}/> Lihat evaluasi kebiasaan</Link>}
 
       <section className="space-y-4" aria-labelledby="tasks-heading">
         <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 id="tasks-heading" className="text-xl font-bold">Daftar Tugas</h2>{plan.kind === "goal" && <p className="mt-1 text-xs text-slate-500">Tugas tetap tersedia sebagai langkah pendukung Goal, apa pun metode progresnya.</p>}</div>{!archived && <Button onClick={() => setAddingTask((v) => !v)}><Plus size={16}/>{addingTask ? "Tutup formulir" : "Tambah tugas"}</Button>}</div>
