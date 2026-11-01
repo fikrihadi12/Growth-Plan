@@ -2,8 +2,6 @@ import type { ReactNode } from "react";
 import { lazy, Suspense } from "react";
 import { Link, Navigate, Route, Routes, useLocation, useParams } from "react-router";
 import { useAuth } from "../features/auth/authContext";
-import { TaskProvider } from "../features/tasks/TaskProvider";
-import { AppLayout } from "../layouts/AppLayout";
 import { supabaseConfigured } from "../lib/supabase";
 // Public pages
 const AuthPage = lazy(() => import("../features/auth/AuthPage"));
@@ -25,6 +23,20 @@ const AnalyticsPage = lazy(() => import("../features/analytics/AnalyticsPage"));
 
 const SettingsPage = lazy(() => import("../features/settings/SettingsPage"));
 
+// Layout dan Workspace Provider hanya dimuat
+// ketika pengguna memasuki area aplikasi.
+const LazyTaskProvider = lazy(() =>
+  import("../features/tasks/TaskProvider").then((module) => ({
+    default: module.TaskProvider,
+  })),
+);
+
+const LazyAppLayout = lazy(() =>
+  import("../layouts/AppLayout").then((module) => ({
+    default: module.AppLayout,
+  })),
+);
+
 function ProtectedApp() {
   const { session, loading, error } = useAuth();
   const location = useLocation();
@@ -43,9 +55,9 @@ function ProtectedApp() {
     );
   if (!session) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} replace />;
   return (
-    <TaskProvider key={session.user.id} userId={session.user.id}>
-      <AppLayout />
-    </TaskProvider>
+    <LazyTaskProvider key={session.user.id} userId={session.user.id}>
+      <LazyAppLayout />
+    </LazyTaskProvider>
   );
 }
 function PublicRoute({ children }: { children: ReactNode }) {
