@@ -90,7 +90,7 @@ export default function AnalyticsPage() {
   const archived = individual ? plans.find((p) => p.id === individual.planId)?.status !== "active" : false;
   const canPrev = !!individual && addDaysISO(journalWeek, -1) >= individual.startDate && weekOffset < 104;
 
-  return <div className="space-y-7">
+  return <div className="w-full min-w-0 max-w-full space-y-7">
     <div className="flex flex-wrap items-end justify-between gap-4">
       <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-600">Personal Evaluation</p>
         <h1 className="mt-1 text-3xl font-extrabold">Evaluasi & Analitik</h1>
@@ -99,14 +99,14 @@ export default function AnalyticsPage() {
       <Link to="/app/habits" className="inline-flex items-center gap-2 text-sm font-semibold text-brand-600 hover:underline"><ArrowLeft size={16}/> Kembali ke Habits</Link>
     </div>
 
-    <Card className="grid gap-4 p-5 md:grid-cols-2">
-      <label className="text-sm font-semibold">Filter Goal
+    <Card className="grid min-w-0 max-w-full gap-4 p-5 md:grid-cols-2">
+      <label className="min-w-0 text-sm font-semibold">Filter Goal
         <select className={field} value={goalSelected} onChange={(e) => { setGoalId(e.target.value); setHabitId("all"); setWeekOffset(0); }}>
           <option value="all">Semua Goal</option>
           {goals.map((g) => <option key={g.id} value={g.id}>{g.name}{g.status === "archived" ? " (arsip)" : ""}</option>)}
         </select>
       </label>
-      <label className="text-sm font-semibold">Filter Habit
+      <label className="min-w-0 text-sm font-semibold">Filter Habit
         <select className={field} value={habitSelected} onChange={(e) => { setHabitId(e.target.value); setWeekOffset(0); }}>
           <option value="all">Semua Habit</option>
           {scopeHabits.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
@@ -115,17 +115,17 @@ export default function AnalyticsPage() {
     </Card>
 
     {!selected.length ? <Card className="p-6"><p className="text-sm text-slate-500">Belum ada Habit pada pilihan ini. Buat Habit melalui Goal agar grafik dapat menghitung riwayat latihan.</p></Card> : <>
-      <section aria-label="Statistik pribadi" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section aria-label="Statistik pribadi" className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Card className="p-5"><Activity className="text-brand-600" size={20}/><p className="mt-3 text-xs text-slate-500">Check-in hari ini</p><p className="mt-1 text-2xl font-bold">{logsToday}</p><p className="mt-2 text-xs text-slate-500">Jumlah aktivitas yang dicatat hari ini</p></Card>
         <Card className="p-5"><CalendarDays className="text-brand-600" size={20}/><p className="mt-3 text-xs text-slate-500">Sesi bulan berjalan</p><p className="mt-1 text-2xl font-bold">{sessionsThisMonth}</p><p className="mt-2 text-xs text-slate-500">Jumlah sesi, bukan tingkat capaian</p></Card>
         <Card className="p-5"><BarChart3 className="text-brand-600" size={20}/><p className="mt-3 text-xs text-slate-500">Konsistensi 12 minggu</p><p className="mt-1 text-2xl font-bold">{consistency.percent === null ? "—" : `${consistency.percent}%`}</p><p className="mt-2 text-xs text-slate-500">{consistency.met}/{consistency.eligible} habit-minggu penuh berhasil</p></Card>
         <Card className="p-5"><Flame className="text-brand-600" size={20}/><p className="mt-3 text-xs text-slate-500">Streak mingguan</p><p className="mt-1 text-2xl font-bold">{individual ? `${getCompletedWeekStreak(individual, habitLogs, habitTargets, today)} minggu` : "—"}</p><p className="mt-2 text-xs text-slate-500">{individual ? "Hanya minggu selesai, bukan minggu berjalan" : "Pilih satu Habit untuk melihat streak"}</p></Card>
       </section>
 
-      <Card className="space-y-4 p-5 sm:p-6">
+      <Card className="min-w-0 max-w-full space-y-4 p-5 sm:p-6">
         <div><h2 className="text-lg font-bold">Pencapaian mingguan</h2><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">12 minggu terakhir · tinggi batang = sesi terlaksana. Target tercatat terpisah untuk perbandingan.</p></div>
-        <div className="overflow-x-auto pb-2">
-          <div className="flex min-w-160 items-end gap-2" role="list" aria-label="Grafik pencapaian mingguan">
+        <div className="w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain pb-2" role="region" aria-label="Grafik pencapaian mingguan, dapat digeser horizontal" tabIndex={0}>
+          <div className="flex w-full min-w-160 items-end gap-2" role="list" aria-label="Grafik pencapaian mingguan">
             {weekly.map((w) => <div key={w.start} role="listitem" className="flex min-w-11 flex-1 flex-col items-center gap-2">
               <span className="text-xs font-semibold" title={`${w.completed} dari ${w.target} sesi`}>{w.completed}/{w.target || "–"}</span>
               <div className="flex h-36 w-full max-w-12 items-end rounded-t-lg bg-slate-100 dark:bg-slate-800" title={`${w.start} hingga ${w.end}: ${w.completed}/${w.target} sesi, ${w.eligible} evaluasi minggu penuh`}>
@@ -135,6 +135,7 @@ export default function AnalyticsPage() {
             </div>)}
           </div>
         </div>
+        <p className="text-xs text-slate-500 sm:hidden">Geser grafik ke samping untuk melihat minggu lainnya.</p>
         <p className="text-xs text-slate-500">Hijau = total sesi mencapai total target pada minggu tersebut. Minggu yang masih berjalan atau aktif sebagian tetap ditampilkan, tetapi tidak dimasukkan ke skor konsistensi.</p>
         <div className="grid gap-2 sm:grid-cols-3">
           {weekly.slice(-3).map((w) => <div key={w.start} className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
@@ -145,10 +146,10 @@ export default function AnalyticsPage() {
         </div>
       </Card>
 
-      <div className="grid gap-5 xl:grid-cols-2">
-        <Card className="space-y-4 p-5 sm:p-6">
+      <div className="grid min-w-0 gap-5 xl:grid-cols-2">
+        <Card className="min-w-0 max-w-full space-y-4 p-5 sm:p-6">
           <div><h2 className="text-lg font-bold">Tren bulanan</h2><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Jumlah sesi check-in per bulan kalender, selama 12 bulan terakhir.</p></div>
-          <div className="overflow-x-auto pb-2"><div className="flex min-w-136 items-end gap-2" role="list" aria-label="Grafik sesi bulanan">
+          <div className="w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain pb-2" role="region" aria-label="Grafik tren bulanan, dapat digeser horizontal" tabIndex={0}><div className="flex w-full min-w-136 items-end gap-2" role="list" aria-label="Grafik sesi bulanan">
             {monthly.map((m) => <div role="listitem" key={m.month} className="flex min-w-9 flex-1 flex-col items-center gap-2">
               <span className="text-xs font-semibold">{m.completed}</span>
               <div className="flex h-34 w-full max-w-11 items-end rounded-t-lg bg-slate-100 dark:bg-slate-800" title={`${m.month}: ${m.completed} sesi`}>
@@ -156,9 +157,10 @@ export default function AnalyticsPage() {
               </div><span className="text-[11px] text-slate-500">{monthsID[Number(m.month.slice(5)) - 1]} '{m.month.slice(2,4)}</span>
             </div>)}
           </div></div>
+          <p className="text-xs text-slate-500 sm:hidden">Geser grafik ke samping untuk melihat bulan lainnya.</p>
           <p className="text-xs text-slate-500">Bulan yang sedang berlangsung belum lengkap; penurunan jumlah sesi belum tentu menunjukkan penurunan konsistensi.</p>
         </Card>
-        <Card className="space-y-4 p-5 sm:p-6">
+        <Card className="min-w-0 max-w-full space-y-4 p-5 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-lg font-bold">Evaluasi tahunan</h2><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Target mingguan yang tercapai dalam satu tahun.</p></div>
             <label className="text-xs font-semibold">Tahun
               <select className={field} value={selectedYear} onChange={(e) => setYear(Number(e.target.value))}>
@@ -173,7 +175,7 @@ export default function AnalyticsPage() {
         </Card>
       </div>
 
-      <Card className="space-y-4 p-5 sm:p-6">
+      <Card className="min-w-0 max-w-full space-y-4 p-5 sm:p-6">
         <div className="flex items-start gap-3"><NotebookPen className="mt-1 shrink-0 text-brand-600"/><div><h2 className="text-lg font-bold">Jurnal refleksi mingguan</h2><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Tulis pengamatan pribadi untuk satu Habit. Catatan tersimpan pada minggu yang dipilih.</p></div></div>
         {!individual ? <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500 dark:bg-slate-800">Pilih satu Habit pada filter di atas untuk menulis atau membaca jurnal refleksi.</p> : <>
           <div className="flex flex-wrap items-center justify-between gap-2">
