@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from "react-router";
-import { CheckCircle2, LockKeyhole } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, LockKeyhole } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "./authContext";
 
@@ -14,6 +14,8 @@ export default function AuthPage({ mode }: { mode: "login" | "register" | "forgo
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -61,12 +63,56 @@ export default function AuthPage({ mode }: { mode: "login" | "register" | "forgo
         <label className="block text-sm font-semibold">Email
           <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@contoh.com" className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-slate-900 outline-brand-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
         </label>
-        {mode !== "forgot" && <label className="block text-sm font-semibold">Kata sandi
-          <input type="password" required minLength={8} autoComplete={mode === "register" ? "new-password" : "current-password"} value={password} onChange={(e) => setPassword(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-slate-900 outline-brand-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
-        </label>}
-        {mode === "register" && <label className="block text-sm font-semibold">Ulangi kata sandi
-          <input type="password" required minLength={8} autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-slate-900 outline-brand-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white" />
-        </label>}
+        {mode !== "forgot" && <div>
+          <label htmlFor="auth-password" className="block text-sm font-semibold">Kata sandi</label>
+          <div className="relative mt-2">
+            <input
+              id="auth-password"
+              type={showPassword ? "text" : "password"}
+              required
+              minLength={8}
+              autoComplete={mode === "register" ? "new-password" : "current-password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 pr-12 text-slate-900 outline-brand-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((value) => !value)}
+              aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+              aria-pressed={showPassword}
+              title={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+              className="absolute inset-y-0 right-1 flex w-11 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-brand-500 dark:text-slate-400 dark:hover:bg-slate-800"
+            >
+              {showPassword ? <EyeOff size={19} aria-hidden="true" /> : <Eye size={19} aria-hidden="true" />}
+            </button>
+          </div>
+        </div>}
+        {mode === "register" && <div>
+          <label htmlFor="auth-confirm-password" className="block text-sm font-semibold">Ulangi kata sandi</label>
+          <div className="relative mt-2">
+            <input
+              id="auth-confirm-password"
+              type={showConfirmPassword ? "text" : "password"}
+              required
+              minLength={8}
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 pr-12 text-slate-900 outline-brand-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword((value) => !value)}
+              aria-label={showConfirmPassword ? "Sembunyikan konfirmasi kata sandi" : "Tampilkan konfirmasi kata sandi"}
+              aria-pressed={showConfirmPassword}
+              title={showConfirmPassword ? "Sembunyikan konfirmasi kata sandi" : "Tampilkan konfirmasi kata sandi"}
+              className="absolute inset-y-0 right-1 flex w-11 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-brand-500 dark:text-slate-400 dark:hover:bg-slate-800"
+            >
+              {showConfirmPassword ? <EyeOff size={19} aria-hidden="true" /> : <Eye size={19} aria-hidden="true" />}
+            </button>
+          </div>
+        </div>}
         {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300">{error}</p>}
         {message && <p role="status" className="flex gap-2 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300"><CheckCircle2 className="shrink-0" size={17} />{message}</p>}
         <button disabled={pending} className="w-full rounded-xl bg-brand-600 px-4 py-3 font-semibold text-white hover:bg-brand-700 disabled:opacity-60" type="submit">{pending ? "Memproses…" : label}</button>
